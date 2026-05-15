@@ -1,0 +1,7 @@
+numpy
+pandas
+jupyter_client
+jupyter_core
+ipython
+ipykernel
+todoist-api-python
