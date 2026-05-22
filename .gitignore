@@ -217,3 +217,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 utils/credentials.py
+utils/config.py
+data/my-energysystem-tasks.csv
