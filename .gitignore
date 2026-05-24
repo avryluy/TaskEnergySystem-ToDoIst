@@ -219,3 +219,4 @@ __marimo__/
 utils/credentials.py
 utils/config.py
 data/my-energysystem-tasks.csv
+data/my-energysystem-tasks_raw.csv
