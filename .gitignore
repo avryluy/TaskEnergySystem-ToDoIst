@@ -221,3 +221,4 @@ utils/config.py
 data/my-energysystem-tasks.csv
 data/my-energysystem-tasks_raw.csv
 TaskEnergySystem-ToDoIst.code-workspace
+.vscode
