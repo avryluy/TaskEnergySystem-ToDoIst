@@ -9,13 +9,13 @@ from utils import config
 class DataProcessor:
     "Handles all data manipulation and storing into archive."
 
-    COLUMN_TEMPLATE = config.TODOIST_COLUMNS
-    COLUMNS_RENAMED = dict(
-        zip(config.TODOIST_COLUMNS["keep"], config.TODOIST_COLUMNS["renamed"])
-    )
-    DATE_FORMAT = r"%Y/%m/%d"
+
 
     def __init__(self, data: dict) -> None:
+        self.COLUMNS_RENAMED = dict(
+            zip(config.TODOIST_COLUMNS["keep"], config.TODOIST_COLUMNS["renamed"]))
+        self.COLUMN_TEMPLATE = config.TODOIST_COLUMNS
+        self.DATE_FORMAT = r"%Y/%m/%d"
         self.most_recent_date = None
         self.csv_df = self.load_csv(data['archive'])
         self.projects_df = self.build_dataframe(data['projects'])
