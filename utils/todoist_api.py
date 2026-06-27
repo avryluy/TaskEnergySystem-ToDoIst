@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-
+from utils.logger import logger
 import requests
 
 from utils.credentials import api_key
@@ -11,6 +11,7 @@ class ToDoistAPIClient:
     BASE_URL = "https://api.todoist.com/api/v1/"
 
     def __init__(self):
+        logger.info("ToDoist API Module Initialized.")
         self.session = requests.Session()
         self.session.headers.update(
             {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -20,19 +21,22 @@ class ToDoistAPIClient:
         url = f"{self.BASE_URL}{endpoint}"
         items = []
         cursor = None
-
+        logger.info(f"Making request for ToDoist {endpoint}")
         while True:
             request_params = params.copy() if params else {}
             if cursor:
                 request_params["cursor"] = cursor
 
-            response = self.session.get(url, params=request_params)
-            response.raise_for_status()
-            data = response.json()
-            results_key = "results" if "project" in endpoint else "items"
-            items.extend(data.get(results_key))
-            cursor = data.get("next_cursor")
-
+            try:
+                response = self.session.get(url, params=request_params)
+                response.raise_for_status()
+                data = response.json()
+                results_key = "results" if "project" in endpoint else "items"
+                logger.info(f"Request Session results key:{results_key}")
+                items.extend(data.get(results_key))
+                cursor = data.get("next_cursor")
+            except Exception as e:
+                logger.error(e)
             if not cursor:
                 break
         return items
@@ -44,6 +48,7 @@ class ToDoistAPIClient:
     def get_tasks_by_date(self, start_date=None, end_date=None):
         """Fetches tasks from a defined daterange"""
         params = {}
+        params["limit"] = 200
         if start_date:
             params["since"] = start_date
         if end_date:
