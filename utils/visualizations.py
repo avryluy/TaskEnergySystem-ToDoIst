@@ -3,28 +3,38 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from utils import config
 from pandas import DataFrame
-# import ost
-
+from pathlib import Path
+from utils.logger import logger
 
 
 class TaskGraphs:
 
-    def __init__(self, data: DataFrame) -> None:
+    def __init__(self, data: DataFrame | None, path: str) -> None:
+        logger.info("TaskGraphs initialized")
+        if data is None:
+            raise ValueError("DataFrame empty. Cannot initialize graph maker.")
         self.task_data = data
         self.tag_colors = config.TAG_COLOR_MAP
         self.timeframes = ['this week', 'this month', 'all time']
+        self.save_path = str(Path.cwd()) + path
         # self.timeframe_df = self.get_timeframe_df(self.task_data, self.timeframes)
         pass
 
     # Timeframe filters
     def get_timeframe_df(self, timeframe: str) -> DataFrame:
+        logger.info(f"CompletedDate colum: {type(self.task_data['CompletedDate'])}")
+        # if isinstance(self.task_data['CompletedDate'], str):
+        #     logger.warning("TaskData type is str when it should be datetime.datetime")
         now = datetime.now()
+        # return self.task_data
         if timeframe == 'this week':
             start_of_week = now - timedelta(days=now.weekday())
-            return self.task_data[self.task_data['CompletedDate'] >= start_of_week]
-        elif timeframe == 'this month':
-            start_of_month = now.replace(day=1)
-            return self.task_data[self.task_data['CompletedDate'] >= start_of_month]
+            print(self.task_data['CompletedDate'].info())
+            return self.task_data
+            # return self.task_data[self.task_data['CompletedDate'] >= start_of_week]
+        # elif timeframe == 'this month':
+        #     start_of_month = now.replace(day=1)
+        #     return self.task_data[self.task_data['CompletedDate'] >= start_of_month]
         else: # all time
             return self.task_data
 
@@ -41,7 +51,8 @@ class TaskGraphs:
         plt.figure(figsize=(6, 6))
         plt.pie([depleting_count, recharging_count], labels=['Depleting', 'Recharging'], autopct='%1.1f%%', colors=['red', 'green'])
         plt.title(f'Depleting vs Recharging ({timeframe})')
-        plt.savefig(f"chart_1_{timeframe.replace(" ", "_")}.png")
+        # plt.savefig(self.save_path + f"/chart_1_{timeframe.replace(" ", "_")}.png")
+        logger.info(f"depleting vs recharging Graph Saved - {timeframe.Name}")
         plt.close()
 
     def other_tasks_piechart(self, timeframe: DataFrame)-> None:
@@ -53,7 +64,7 @@ class TaskGraphs:
             plt.figure(figsize=(8, 8))
             label_counts.plot(kind='pie', autopct='%1.1f%%')
             plt.title(f'Task Labels excluding Depleting/Recharging ({timeframe})')
-            plt.savefig(f'chart_2_{timeframe.replace(" ", "_")}.png')
+            # plt.savefig(self.save_path + f"/chart_2_{timeframe.replace(" ", "_")}.png")
             plt.close()
 
     def energybytype_barchart(self, timeframe: DataFrame)-> None:
@@ -77,15 +88,16 @@ class TaskGraphs:
             pivot_df = res_df.groupby(['Group', 'EnergyType']).size().unstack(fill_value=0)
             pivot_df.plot(kind='bar', figsize=(10, 6))
             plt.title(f'Energy Levels by Group ({timeframe})')
-            plt.savefig(f'chart_3_{timeframe.replace(" ", "_")}.png')
+            # plt.savefig(self.save_path + f"/chart_3_{timeframe.replace(" ", "_")}.png")
             plt.close()
 
     def generate_all_charts(self)-> None:
         for tf in self.timeframes:
             df = self.get_timeframe_df(tf)
-            self.deplete_recharge_piechart(df)
-            self.other_tasks_piechart(df)
-            self.energybytype_barchart(df)
+            df.Name = tf
+            # self.deplete_recharge_piechart(df)
+            # self.other_tasks_piechart(df)
+            # self.energybytype_barchart(df)
             
             
     
