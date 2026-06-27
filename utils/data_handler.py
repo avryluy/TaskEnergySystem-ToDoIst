@@ -14,7 +14,7 @@ class DataProcessor:
     def __init__(self, data: dict) -> None:
         logger.info("Data handler initialized.")
         self.data_path = Path(Path.cwd(), r"data/", data['archive'])
-        self.DATE_FORMAT = r"%Y/%m/%d"
+        self.date_format = config.DATE_FORMAT
         self.most_recent_date = None
         self.load_csv(self.data_path)
         # print('projects' in data.keys())
@@ -135,11 +135,11 @@ class DataProcessor:
         pkey = self.get_df_id(df)
         date_columns = self.split_column(data = df, split="due",key=pkey[1])
         date_columns['DueDate'] = date_columns['DueDate'].apply(dateparser.parse)
-        date_columns['DueDate'] = [date.strftime(self.DATE_FORMAT) for date in date_columns['DueDate']]
+        date_columns['DueDate'] = [date.strftime(self.date_format) for date in date_columns['DueDate']]
         combined_df = pd.merge(left= df, right=date_columns, on=pkey[1], how='left')
         colnames = config.DATE_COLUMNS
         combined_df[colnames] = combined_df[colnames].apply(
-            lambda row: [self.isoToString(rowItem, self.DATE_FORMAT) for rowItem in row]
+            lambda row: [self.isoToString(rowItem, self.date_format) for rowItem in row]
         )
         return combined_df
     
