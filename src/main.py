@@ -3,8 +3,6 @@ from utils import visualizations as v
 from utils import credentials as c
 from utils import todoist_api, data_handler
 from utils.logger import logger
-# import pandas as pd
-# from pathlib import Path
 
 def main():
     logger.info("Initiating Program")
@@ -19,11 +17,8 @@ def main():
     logger.info("Api Data collected.")
     
     handler = data_handler.DataProcessor(data)
-    
     handler.combine_tasks()
-    
     handler.merge_dataframes()
-    
     handler.save_to_csv()
     graphs = v.TaskGraphs(handler.distilled_tasks_df,c.SAVE_DIR)
     graphs.generate_all_charts()

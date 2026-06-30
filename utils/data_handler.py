@@ -84,6 +84,7 @@ class DataProcessor:
         if "due" in df.columns:
             df = self.clean_dates(df)
             df = df.drop(columns=["due"], errors="ignore")
+        
         df = df[[c for c in config.DISTILLED_TASK_COLUMNS if c in df.columns]]
         df = self.clean_dataframe(df)
         self.api_df = df
@@ -111,6 +112,8 @@ class DataProcessor:
     def combine_tasks(self) -> None:
         logger.info("Combining archived tasks with newly pulled tasks")
         if self.csv_df is not None:
+            if "ProjectName" in self.csv_df:
+                self.csv_df = self.csv_df.drop(columns=["ProjectName"])
             self.distilled_tasks_df = pd.concat([self.api_df, self.csv_df]).reset_index(drop=True)
         elif self.api_df is not None:
             self.distilled_tasks_df = self.api_df
@@ -141,6 +144,8 @@ class DataProcessor:
         combined_df[colnames] = combined_df[colnames].apply(
             lambda row: [self.isoToString(rowItem, self.date_format) for rowItem in row]
         )
+        if "DueIs_recurring" in combined_df.columns:
+            combined_df= combined_df.rename(columns={"DueIs_recurring":"IsRecurringTask"})
         return combined_df
     
     def clean_dataframe(self, name: DataFrame)-> DataFrame:
@@ -155,7 +160,6 @@ class DataProcessor:
             'TaskDuration': 0,
             'ParentTaskID': ""
         }
-
         # df = df.rename(columns=self.COLUMNS_RENAMED)
         # df = df.drop(columns=self.COLUMN_TEMPLATE["drop"], errors="ignore")
         df = df.fillna(fill_values)
@@ -187,6 +191,7 @@ class DataProcessor:
             left_on="ProjectID",
             right_on = "ProjectID"
         )
+
         output = self.clean_dataframe(output)
         self.distilled_tasks_df = output
         return
