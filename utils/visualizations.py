@@ -41,7 +41,7 @@ class TaskGraphs:
     def save_figure(self, chart: Figure, title: str) -> None:
 
         save_path = Path(self.save_path, f"{datetime.strftime(self.now, config.FILE_DATE_FORMAT)}_{title.replace(" ", "_")}.png")
-        chart.savefig(save_path)
+        chart.savefig(save_path,bbox_inches="tight")
         logger.info(f"Chart Saved: {str(save_path)}")
         return
 
@@ -99,11 +99,11 @@ class TaskGraphs:
             res_df = pd.DataFrame(results)
             pivot_df = res_df.groupby(['Group', 'EnergyType']).size().unstack(fill_value=0)
             
-            fig, ax = plt.subplots(figsize=(10,6))
+            fig, ax = plt.subplots(figsize=(10,7))
 
             pivot_df.plot(kind="bar", ax=ax)
             ax.set_title(title)
-            
+            ax.tick_params(axis="x",rotation=20)
             # fig = pivot_df.plot(kind='bar', figsize=(10, 6))
             self.save_figure(fig, title)
             # plt.savefig(self.save_path + f"/chart_3_{timeframe.replace(" ", "_")}.png")
