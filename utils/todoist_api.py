@@ -1,8 +1,7 @@
-from typing import Dict, List, Optional
-from utils.logger import logger
 import requests
 
 from utils.credentials import api_key
+from utils.logger import logger
 
 
 class ToDoistAPIClient:
@@ -17,7 +16,7 @@ class ToDoistAPIClient:
             {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         )
 
-    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> List[Dict]:
+    def _make_request(self, endpoint: str, params: dict | None = None) -> list[dict]:
         url = f"{self.BASE_URL}{endpoint}"
         items = []
         cursor = None
