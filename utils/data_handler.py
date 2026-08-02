@@ -1,11 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+import pandas as pd
+
 # from typing import Any
 from dateutil import parser as dateparser
-import pandas as pd
 from pandas import DataFrame, Series
+
 from utils import config
 from utils.logger import logger
+
+
 class DataProcessor:
     "Handles all data manipulation and storing into archive."
 
@@ -18,13 +23,13 @@ class DataProcessor:
         self.most_recent_date = None
         self.load_csv(self.data_path)
         # print('projects' in data.keys())
-        if 'projects' in data.keys():
+        if 'projects' in data:
             logger.info("Projects found in data keys")
             self.projects_df = self.build_dataframe(data = data['projects'], mapping=config.PROJECT_COLUMN_MAPPING)
             self.clean_projects()
         else:
             self.projects_df = None
-        if 'api_tasks' in data.keys():
+        if 'api_tasks' in data:
             self.process_api_tasks(data= data['api_tasks'])
         else:
             self.api_df = None
@@ -66,7 +71,7 @@ class DataProcessor:
         # print(df.columns)
         if mapping:
             # filter down to columns i want to keep
-            existing_source_cols = [c for c in mapping.keys() if c in df.columns]
+            existing_source_cols = [c for c in mapping if c in df.columns]
             # print(f"columns to filter on: {existing_source_cols}")
             # print(f"mapping dict: {mapping}")
             if "due" in df.columns and "due" not in existing_source_cols:
@@ -80,6 +85,7 @@ class DataProcessor:
     
     def process_api_tasks(self, data):
         df = self.build_dataframe(data, config.TASK_COLUMN_MAPPING)
+        df["CompletedDate_dt"] = pd.to_datetime(df["CompletedDate"],errors="coerce")
         #explode due dict into columns
         if "due" in df.columns:
             df = self.clean_dates(df)
@@ -89,7 +95,7 @@ class DataProcessor:
         df = self.clean_dataframe(df)
         self.api_df = df
 
-        return
+        
     def load_csv(self, path: Path) -> None:
         logger.info(f"Loading file to Dataframe:{path}")
 
@@ -101,11 +107,15 @@ class DataProcessor:
             logger.warning(f"CSV loading failed. File did not exist at location: {path}")
 
         self.most_recent_date = self.max_date('CompletedDate')
-        return
+        
     
     def max_date(self, col: str) -> datetime:
         if self.csv_df is None:
-            return datetime.now().replace(day=1) 
+            now = datetime.now(tz=timezone(
+            -timedelta(hours=5),
+              name="CDT")).replace(day=1)
+            default_date = (now - timedelta(days=90)).replace(day=1)
+            return default_date 
         maxdate = self.csv_df[f'{col}'].max()
         return dateparser.parse(maxdate)
         
@@ -119,7 +129,6 @@ class DataProcessor:
             self.distilled_tasks_df = self.api_df
         else:
             logger.error("API and CSV dataframes are empty.")
-        return
 
     def get_df_id(self, dataframe: DataFrame) -> tuple:
 
@@ -130,11 +139,17 @@ class DataProcessor:
             val = dataframe.columns.get_loc("id")
             output = (val, "id")    
         if not isinstance(val, int):
-            raise ValueError(f"Expected single 'id' column, but found {type(val)}")
+            raise TypeError(f"Expected single 'id' column, but found {type(val)}")
         return output
         
     def clean_dates(self, df: DataFrame) -> DataFrame:
-
+        if df['due'].isna().any() == True:
+            logger.info("Due columns is empty. Skipping step.")
+            # print(df.columns)
+            df['DueDate'] = "1900/01/01"
+            df['IsRecurringTask'] = False
+            return df  
+        print(df['due'].isna().any())
         pkey = self.get_df_id(df)
         date_columns = self.split_column(data = df, split="due",key=pkey[1])
         date_columns['DueDate'] = date_columns['DueDate'].apply(dateparser.parse)
@@ -172,14 +187,13 @@ class DataProcessor:
             # self.projects_df = self.projects_df[columns]
             # self.projects_df.rename(columns=config.PROJECT_COLUMN_RENAMES, inplace=True)
             self.projects_df.fillna("",inplace=True)
-        return
     
     def merge_dataframes(self) -> None:
         logger.info("Merging projects with tasks...")
         if not isinstance(self.distilled_tasks_df, DataFrame):
-            raise ValueError("Expected Distilled Data to exist. Found None")
+            raise TypeError("Expected Distilled Data to exist. Found None")
         if not isinstance(self.projects_df, DataFrame):
-            raise ValueError("Expected Distilled Data to exist. Found None")
+            raise TypeError("Expected Distilled Data to exist. Found None")
         
         if "ProjectID" not in self.distilled_tasks_df:
             self.distilled_tasks_df = self.clean_dataframe(self.distilled_tasks_df)
@@ -194,12 +208,12 @@ class DataProcessor:
 
         output = self.clean_dataframe(output)
         self.distilled_tasks_df = output
-        return
+        
     
     def save_to_csv(self)-> None:
         logger.info(f"CSV DataFrame Type: {type(self.csv_df)}")
         if not isinstance(self.distilled_tasks_df, DataFrame):
-            raise ValueError()
+            raise TypeError()
         if not isinstance(self.csv_df, DataFrame):
             logger.debug("No archive file found. Saving all tasks...")
             self.distilled_tasks_df.to_csv(self.data_path, index=False)
